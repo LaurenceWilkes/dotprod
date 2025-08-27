@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dot Product Simulator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+      text-align: center;
+    }
+    input[type=range] {
+      width: 80%;
+    }
+    .slider-label {
+      margin-top: 1rem;
+      display: block;
+      font-weight: bold;
+    }
+    #output {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dot Product Simulator</h1>
+  <p>Move the sliders to adjust ζ = (ζ₁, ζ₂) ∈ [0,1]² and see v · ζ for a fixed v ∈ ℤ².</p>
+
+  <label class="slider-label">ζ₁:
+    <input type="range" id="z1" min="0" max="1" step="0.01" value="0.5">
+    <span id="z1val">0.5</span>
+  </label>
+
+  <label class="slider-label">ζ₂:
+    <input type="range" id="z2" min="0" max="1" step="0.01" value="0.5">
+    <span id="z2val">0.5</span>
+  </label>
+
+  <div id="output"></div>
+
+  <script>
+    // Example vector in Z^d (you can edit this)
+    const v = [3, -1];
+
+    function update() {
+      const z1 = parseFloat(document.getElementById("z1").value);
+      const z2 = parseFloat(document.getElementById("z2").value);
+      document.getElementById("z1val").textContent = z1.toFixed(2);
+      document.getElementById("z2val").textContent = z2.toFixed(2);
+
+      const dot = v[0]*z1 + v[1]*z2;
+      document.getElementById("output").textContent =
+        `v = [${v.join(", ")}], ζ = (${z1.toFixed(2)}, ${z2.toFixed(2)}), v·ζ = ${dot.toFixed(3)}`;
+    }
+
+    document.getElementById("z1").oninput = update;
+    document.getElementById("z2").oninput = update;
+    update(); // initial render
+  </script>
+</body>
+</html>
