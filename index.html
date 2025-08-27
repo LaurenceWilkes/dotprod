@@ -1,46 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dot Product Demo</title>
+  <title>Dot Product Simulator</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 2rem;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    .container {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    canvas {
+      border: 2px solid #444;
+      background: white;
+      cursor: crosshair;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 200px;
+    }
+    .controls label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output {
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
   <h1>Dot Product Simulator</h1>
+  <div class="container">
+    <!-- 2D slider -->
+    <canvas id="zetaCanvas" width="300" height="300"></canvas>
 
-  <label>ζ₁:
-    <input type="range" id="z1" min="0" max="1" step="0.01" value="0.5">
-    <span id="z1val">0.5</span>
-  </label>
-  <br><br>
-
-  <label>ζ₂:
-    <input type="range" id="z2" min="0" max="1" step="0.01" value="0.5">
-    <span id="z2val">0.5</span>
-  </label>
-  <br><br>
-
-  <div id="output"></div>
-  <div id="output"></div>
+    <!-- Controls -->
+    <div class="controls">
+      <label>v₁: <input type="number" id="v1" value="3" step="1"></label>
+      <label>v₂: <input type="number" id="v2" value="-1" step="1"></label>
+      <div class="output" id="output"></div>
+    </div>
+  </div>
 
   <script>
-    // Example integer vector v
-    const v = [3, -1];
+    const canvas = document.getElementById("zetaCanvas");
+    const ctx = canvas.getContext("2d");
 
-    function update() {
-      const z1 = parseFloat(document.getElementById("z1").value);
-      const z2 = parseFloat(document.getElementById("z2").value);
+    let zeta = [0.5, 0.5];  // start in middle
+    let v = [parseInt(document.getElementById("v1").value),
+             parseInt(document.getElementById("v2").value)];
 
-      document.getElementById("z1val").textContent = z1.toFixed(2);
-      document.getElementById("z2val").textContent = z2.toFixed(2);
+    function draw() {
+      // Clear
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const dot = v[0]*z1 + v[1]*z2;
-      document.getElementById("output").textContent =
-        "v = [" + v.join(", ") + "], ζ = (" + z1.toFixed(2) + ", " + z2.toFixed(2) + "), v·ζ = " + dot.toFixed(3);
+      // Draw square background grid
+      ctx.fillStyle = "#f0f0f0";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#aaa";
+      for (let i = 0; i <= 10; i++) {
+        let x = (i/10) * canvas.width;
+        let y = (i/10) * canvas.height;
+        ctx.beginPath();
+        ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+        ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Draw point ζ
+      const x = zeta[0] * canvas.width;
+      const y = (1 - zeta[1]) * canvas.height; // invert y axis
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, 2*Math.PI);
+      ctx.fillStyle = "#0077cc";
+      ctx.fill();
+      ctx.strokeStyle = "#004488";
+      ctx.stroke();
     }
 
-    document.getElementById("z1").oninput = update;
-    document.getElementById("z2").oninput = update;
-    update();
+    function updateOutput() {
+      const dot = v[0]*zeta[0] + v[1]*zeta[1];
+      document.getElementById("output").textContent =
+        `ζ = (${zeta[0].toFixed(2)}, ${zeta[1].toFixed(2)}), 
+         v = (${v[0]}, ${v[1]}), 
+         v·ζ = ${dot.toFixed(3)}`;
+    }
+
+    // Handle canvas clicks/drags
+    function setZetaFromEvent(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      zeta = [Math.min(Math.max(x,0),1), 1 - Math.min(Math.max(y,0),1)];
+      draw();
+      updateOutput();
+    }
+
+    let dragging = false;
+    canvas.addEventListener("mousedown", e => { dragging = true; setZetaFromEvent(e); });
+    canvas.addEventListener("mousemove", e => { if(dragging) setZetaFromEvent(e); });
+    canvas.addEventListener("mouseup", () => dragging = false);
+    canvas.addEventListener("mouseleave", () => dragging = false);
+
+    // Handle v changes
+    document.getElementById("v1").addEventListener("input", e => {
+      v[0] = parseInt(e.target.value);
+      updateOutput();
+    });
+    document.getElementById("v2").addEventListener("input", e => {
+      v[1] = parseInt(e.target.value);
+      updateOutput();
+    });
+
+    // Initial draw
+    draw();
+    updateOutput();
   </script>
 </body>
 </html>
