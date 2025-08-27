@@ -44,6 +44,12 @@
       font-size: 1.2rem;
       font-weight: bold;
       text-align: center;
+      white-space: pre-line;
+    }
+    #dotBar {
+      margin-top: 2rem;
+      border: 1px solid #444;
+      background: #fff;
     }
   </style>
 </head>
@@ -61,19 +67,24 @@
     </div>
   </div>
 
+  <!-- Dot product meter -->
+  <canvas id="dotBar" width="500" height="60"></canvas>
+
   <script>
     const canvas = document.getElementById("zetaCanvas");
     const ctx = canvas.getContext("2d");
+    const barCanvas = document.getElementById("dotBar");
+    const barCtx = barCanvas.getContext("2d");
 
     let zeta = [0.5, 0.5];  // start in middle
     let v = [parseInt(document.getElementById("v1").value),
              parseInt(document.getElementById("v2").value)];
+    let dot = 0;
 
-    function draw() {
-      // Clear
+    function drawZeta() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw square background grid
+      // Background grid
       ctx.fillStyle = "#f0f0f0";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -87,9 +98,9 @@
         ctx.stroke();
       }
 
-      // Draw point ζ
+      // Draw ζ point
       const x = zeta[0] * canvas.width;
-      const y = (1 - zeta[1]) * canvas.height; // invert y axis
+      const y = (1 - zeta[1]) * canvas.height;
       ctx.beginPath();
       ctx.arc(x, y, 6, 0, 2*Math.PI);
       ctx.fillStyle = "#0077cc";
@@ -98,29 +109,71 @@
       ctx.stroke();
     }
 
-    function updateOutput() {
-      const dot = v[0]*zeta[0] + v[1]*zeta[1];
-      document.getElementById("output").textContent =
-        `ζ = (${zeta[0].toFixed(2)}, ${zeta[1].toFixed(2)}), 
-         v = (${v[0]}, ${v[1]}), 
-         v·ζ = ${dot.toFixed(3)}`;
+    function drawBar() {
+      barCtx.clearRect(0, 0, barCanvas.width, barCanvas.height);
+
+      const midX = barCanvas.width / 2;
+      const midY = barCanvas.height / 2;
+
+      // Compute max possible |v·ζ|
+      const maxDot = Math.abs(v[0]) + Math.abs(v[1]) || 1; // avoid /0
+      const scale = (barCanvas.width / 2 - 40) / maxDot; // padding
+
+      // Midline
+      barCtx.strokeStyle = "#444";
+      barCtx.beginPath();
+      barCtx.moveTo(midX, 0);
+      barCtx.lineTo(midX, barCanvas.height);
+      barCtx.stroke();
+
+      // Tick marks and labels
+      barCtx.fillStyle = "#333";
+      barCtx.font = "12px sans-serif";
+      barCtx.textAlign = "center";
+      barCtx.textBaseline = "top";
+
+      const numTicks = 4;
+      for (let i = -numTicks; i <= numTicks; i++) {
+        const value = (i / numTicks) * maxDot;
+        const x = midX + value * scale;
+        barCtx.beginPath();
+        barCtx.moveTo(x, midY - 10);
+        barCtx.lineTo(x, midY + 10);
+        barCtx.stroke();
+        barCtx.fillText(value.toFixed(1), x, midY + 12);
+      }
+
+      // Draw value line
+      const length = dot * scale;
+      barCtx.beginPath();
+      barCtx.moveTo(midX, midY);
+      barCtx.lineTo(midX + length, midY);
+      barCtx.strokeStyle = dot >= 0 ? "#0077cc" : "#cc0000";
+      barCtx.lineWidth = 6;
+      barCtx.stroke();
+      barCtx.lineWidth = 1; // reset
     }
 
-    // Handle canvas clicks/drags
+    function updateOutput() {
+      dot = v[0]*zeta[0] + v[1]*zeta[1];
+      document.getElementById("output").textContent =
+        `ζ = (${zeta[0].toFixed(2)}, ${zeta[1].toFixed(2)})\n` +
+        `v = (${v[0]}, ${v[1]})\n` +
+        `v·ζ = ${dot.toFixed(3)}`;
+      drawBar();
+    }
+
     function setZetaFromEvent(e) {
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
       zeta = [Math.min(Math.max(x,0),1), 1 - Math.min(Math.max(y,0),1)];
-      draw();
+      drawZeta();
       updateOutput();
     }
 
-    let dragging = false;
-    canvas.addEventListener("mousedown", e => { dragging = true; setZetaFromEvent(e); });
-    canvas.addEventListener("mousemove", e => { if(dragging) setZetaFromEvent(e); });
-    canvas.addEventListener("mouseup", () => dragging = false);
-    canvas.addEventListener("mouseleave", () => dragging = false);
+    // Mouse tracking
+    canvas.addEventListener("mousemove", e => setZetaFromEvent(e));
 
     // Handle v changes
     document.getElementById("v1").addEventListener("input", e => {
@@ -132,8 +185,8 @@
       updateOutput();
     });
 
-    // Initial draw
-    draw();
+    // Initial render
+    drawZeta();
     updateOutput();
   </script>
 </body>
